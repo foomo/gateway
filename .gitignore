@@ -1,0 +1,46 @@
+.*
+*.zip
+*.tar
+*.out
+*.log
+/bin/
+/tmp/
+
+## Git
+!.gitkeep
+!.gitignore
+
+## Claude
+!.claude/
+.claude/*
+!.claude/settings.json
+
+## GitHub
+!.github/
+
+## Editorconfig
+!.editorconfig
+
+## Lefthook
+!.lefthook.yaml
+
+## VSCode
+!.vscode/
+.vscode/*
+!.vscode/extensions.json
+
+## Golang
+go.work
+go.work.sum
+!.golangci.yml
+!.goreleaser.yml
+
+## Mise
+!.mise.toml
+
+## Vitepress
+node_modules/
+!docs/.vitepress
+docs/.vitepress/*
+!docs/.vitepress/theme/
+!docs/.vitepress/config.mts

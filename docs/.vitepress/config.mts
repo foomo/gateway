@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
 	base: '/gateway/',
 	title: 'gateway',
-	description: 'Collection of standards as types',
+	description: 'Go library for creating application gateways with Kubernetes CRDs',
 	themeConfig: {
 		logo: '/logo.png',
 		outline: [2, 4],
@@ -22,11 +22,10 @@ export default defineConfig({
 				],
 			},
 			{
-				text: 'Standards',
+				text: 'Reference',
 				items: [
-					{ text: 'HTTP', link: '/standards/http' },
-					{ text: 'ISO 3166 - Country Codes', link: '/standards/iso3166' },
-					{ text: 'ISO 4217 - Currency Codes', link: '/standards/iso4217' },
+					{ text: 'Gateway CRD', link: '/reference/crd' },
+					{ text: 'Go API', link: '/reference/api' },
 				],
 			},
 			{
@@ -59,10 +58,6 @@ export default defineConfig({
 		},
 		socialLinks: [
 			{
-				icon: 'docker',
-				link: 'https://hub.docker.com/u/foomo',
-			},
-			{
 				icon: 'github',
 				link: 'https://github.com/foomo/gateway',
 			},
@@ -84,7 +79,7 @@ export default defineConfig({
 			'meta',
 			{
 				property: 'og:description',
-				content: 'Collection of standards as types',
+				content: 'Go library for creating application gateways with Kubernetes CRDs',
 			},
 		],
 		['meta', { name: 'twitter:card', content: 'summary_large_image' }],

@@ -41,7 +41,7 @@ tidy:
 ## Run go generate
 generate:
 	@echo "〉running go generate"
-	@go generate ./...
+	@mise exec -- go generate ./...
 
 .PHONY: test
 ## Run tests

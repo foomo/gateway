@@ -6,8 +6,8 @@ hero:
   image:
     src: /logo.png
     alt: gateway
-  text: TBD
-  tagline: TBD
+  text: Application Gateway for Kubernetes
+  tagline: A Go library for registering and routing services using Kubernetes Custom Resource Definitions.
   actions:
     - theme: brand
       text: Get Started
@@ -17,10 +17,10 @@ hero:
       link: https://github.com/foomo/gateway
 
 features:
-  - title: TBD
-    details: TBD
-  - title: TBD
-    details: TBD
-  - title: TBD
-    details: TBD
+  - title: Kubernetes Native
+    details: Define service registrations as Kubernetes Custom Resources and manage them with standard kubectl workflows.
+  - title: Event-Driven
+    details: Watch for Gateway CRD changes in real time with a simple event channel — add, update, and delete events streamed to your application.
+  - title: Flexible Routing
+    details: Configure path-based routing, base path stripping, CMS integration, internal access groups, and sitemap generation per service.
 ---

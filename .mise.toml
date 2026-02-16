@@ -7,3 +7,5 @@ biome = "2.3.15"
 lefthook = "latest"
 # https://mise-tools.jdx.dev/tools/golangci-lint
 golangci-lint = "latest"
+# https://github.com/kubernetes-sigs/controller-tools/releases
+"github:kubernetes-sigs/controller-tools" = "0.20.1"

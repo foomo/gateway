@@ -6,9 +6,9 @@
   <img alt="gateway" src="docs/public/logo.png" height="400" width="400"/>
 </p>
 
-# Go Standards
+# Gateway
 
-> Library to create your application gateway.
+> Go library for creating application gateways with Kubernetes CRDs.
 
 ## How to Contribute
 

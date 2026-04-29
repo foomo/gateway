@@ -60,9 +60,11 @@ spec:
                         gateway api
                       type: string
                     internalAccessGroups:
-                      description: Access is only granted to these internal groups
+                      description: InternalAccessGroups restricts access to the listed
+                        internal groups.
                       items:
-                        description: InternalAccessGroup represents an internal access group identifier.
+                        description: InternalAccessGroup represents an internal access
+                          group identifier.
                         type: string
                       type: array
                   type: object

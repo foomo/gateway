@@ -221,6 +221,7 @@ func (h *Handler) serveStatus(w http.ResponseWriter, st *state) {
 	for mt := range st.mimeProxies {
 		mimes = append(mimes, string(mt))
 	}
+
 	sort.Strings(mimes)
 
 	type statusResponse struct {

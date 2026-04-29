@@ -25,6 +25,7 @@ func routeResolver(routes map[string][2]string) handler.Resolver {
 		if v, ok := routes[r.URL.Path]; ok {
 			return v[0], v[1], nil
 		}
+
 		return "", "", nil
 	})
 }

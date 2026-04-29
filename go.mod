@@ -5,6 +5,7 @@ go 1.26
 require (
 	github.com/foomo/contentserver v1.18.1
 	github.com/stretchr/testify v1.11.1
+	go.uber.org/zap v1.27.1
 	k8s.io/apimachinery v0.35.1
 	k8s.io/client-go v0.35.1
 )
@@ -108,7 +109,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	gocloud.dev v0.43.0 // indirect

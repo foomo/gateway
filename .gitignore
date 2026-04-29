@@ -32,6 +32,7 @@
 ## Golang
 go.work
 go.work.sum
+/sandbox
 !.golangci.yml
 !.goreleaser.yml
 

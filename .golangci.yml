@@ -77,7 +77,7 @@ linters:
       - tmp
       - third_party$
       - builtin$
-      - examples$
+      - ^examples
 
 formatters:
   enable:
@@ -89,4 +89,4 @@ formatters:
       - tmp
       - third_party$
       - builtin$
-      - examples$
+      - ^examples

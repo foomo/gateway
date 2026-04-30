@@ -33,6 +33,7 @@
 go.work
 go.work.sum
 /sandbox
+/example/example
 !.golangci.yml
 !.goreleaser.yml
 

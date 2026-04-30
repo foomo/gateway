@@ -195,7 +195,7 @@ func TestWatch(t *testing.T) {
 
 	close(events)
 
-	h.Watch(events)
+	handler.Watch(h, events)
 
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, newRequest(http.MethodGet, "/page"))

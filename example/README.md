@@ -1,4 +1,4 @@
-# Gateway Sandbox
+# Gateway Example
 
 Minimal demo of `foomo/gateway` routing — no Docker, no Kubernetes required.
 
@@ -8,7 +8,7 @@ Minimal demo of `foomo/gateway` routing — no Docker, no Kubernetes required.
 go run main.go
 ```
 
-That's it. Everything runs in a single process:
+Everything runs in a single process:
 
 | Service | Role |
 |---|---|
@@ -33,7 +33,6 @@ curl -i http://localhost:8080/news/article-1
 curl -i http://localhost:8080/missing
 
 # built-in gateway endpoints
-curl -i http://localhost:8080/healthz
 curl -i http://localhost:8080/robots.txt
 curl -i http://localhost:8080/sitemap.xml
 curl -i http://localhost:8080/gateway/status
@@ -43,7 +42,7 @@ curl -i http://localhost:8080/gateway/status
 
 - `X-Content-Id` and `X-Mime-Type` headers are set on the proxied request — the frontend reads them to fetch page payload and site context in parallel.
 - `X-Error-Code` is set when routing to the error frontend.
-- `/sitemap.xml`, `/robots.txt`, `/healthz`, and `/gateway/status` are handled by the gateway itself.
+- `/sitemap.xml`, `/robots.txt`, and `/gateway/status` are handled by the gateway itself.
 
 ## Content tree
 

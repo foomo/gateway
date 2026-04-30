@@ -1,4 +1,4 @@
-// Sandbox demonstrates foomo/gateway routing without any external dependencies.
+// Example demonstrates foomo/gateway routing without any external dependencies.
 //
 // It spins up three local services:
 //   - a mock contentserver (resolves URIs to mime types)

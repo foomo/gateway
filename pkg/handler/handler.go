@@ -2,19 +2,18 @@ package handler
 
 import (
 	"encoding/json"
-	"encoding/xml"
-	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"sort"
 	"strconv"
-	"strings"
 	"sync/atomic"
 
 	"go.uber.org/zap"
 
 	"github.com/foomo/gateway/pkg/gateway"
+	"github.com/foomo/gateway/pkg/robots"
+	"github.com/foomo/gateway/pkg/sitemap"
 )
 
 const (
@@ -30,14 +29,10 @@ type Resolver interface {
 }
 
 type state struct {
-	mimeProxies map[gateway.MimeType]*serviceProxy
-	errorProxy  *serviceProxy
+	mimeProxies map[gateway.MimeType]*httputil.ReverseProxy
+	errorProxy  *httputil.ReverseProxy
 	sitemapURLs []string
 	robotsTXT   []string
-}
-
-type serviceProxy struct {
-	proxy *httputil.ReverseProxy
 }
 
 // Handler routes HTTP requests to registered frontend services based on mime-type resolution.
@@ -53,7 +48,7 @@ func New(l *zap.Logger, resolver Resolver) *Handler {
 		resolver: resolver,
 		l:        l,
 	}
-	h.state.Store(&state{mimeProxies: map[gateway.MimeType]*serviceProxy{}})
+	h.state.Store(&state{mimeProxies: map[gateway.MimeType]*httputil.ReverseProxy{}})
 
 	return h
 }
@@ -61,7 +56,7 @@ func New(l *zap.Logger, resolver Resolver) *Handler {
 // Apply rebuilds routing state from the given specs atomically.
 func (h *Handler) Apply(specs []gateway.Spec) {
 	st := &state{
-		mimeProxies: map[gateway.MimeType]*serviceProxy{},
+		mimeProxies: map[gateway.MimeType]*httputil.ReverseProxy{},
 	}
 
 	for _, spec := range specs {
@@ -74,9 +69,7 @@ func (h *Handler) Apply(specs []gateway.Spec) {
 			continue
 		}
 
-		sp := &serviceProxy{
-			proxy: httputil.NewSingleHostReverseProxy(proxyURL),
-		}
+		sp := httputil.NewSingleHostReverseProxy(proxyURL)
 
 		if spec.Sitemap != "" {
 			st.sitemapURLs = append(st.sitemapURLs, spec.Sitemap)
@@ -107,12 +100,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch r.URL.Path {
 	case "/robots.txt":
-		w.Header().Set("Content-Type", "text/plain")
-		_, _ = w.Write([]byte(strings.Join(st.robotsTXT, "\n")))
+		robots.Serve(w, st.robotsTXT)
 
 		return
 	case "/sitemap.xml":
-		h.serveSitemap(w, st)
+		sitemap.Serve(w, st.sitemapURLs)
 
 		return
 	case "/gateway/status":
@@ -153,67 +145,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	r.Header.Set(HeaderContentID, contentID)
 	r.Header.Set(HeaderMimeType, string(mt))
-	sp.proxy.ServeHTTP(w, r)
-}
-
-// Watch ranges over gateway events, maintains the full spec collection, and calls Apply on each change.
-// It returns when the events channel is closed. Run it in a goroutine.
-func (h *Handler) Watch(events <-chan gateway.Event) {
-	specs := map[gateway.Service]gateway.Spec{}
-
-	for event := range events {
-		switch event.Type {
-		case gateway.EventAdd, gateway.EventUpdate:
-			specs[event.Gateway.Spec.Service] = event.Gateway.Spec
-		case gateway.EventDelete:
-			delete(specs, event.Gateway.Spec.Service)
-		}
-
-		all := make([]gateway.Spec, 0, len(specs))
-		for _, s := range specs {
-			all = append(all, s)
-		}
-
-		h.Apply(all)
-	}
+	sp.ServeHTTP(w, r)
 }
 
 func (h *Handler) serveError(w http.ResponseWriter, r *http.Request, st *state, code int) {
 	if st.errorProxy != nil {
 		r.Header.Set(HeaderErrorCode, strconv.Itoa(code))
-		st.errorProxy.proxy.ServeHTTP(w, r)
+		st.errorProxy.ServeHTTP(w, r)
 
 		return
 	}
 
 	http.Error(w, http.StatusText(code), code)
-}
-
-type sitemapIndex struct {
-	XMLName  xml.Name     `xml:"sitemapindex"`
-	XMLNS    string       `xml:"xmlns,attr"`
-	Sitemaps []sitemapLoc `xml:"sitemap"`
-}
-
-type sitemapLoc struct {
-	Loc string `xml:"loc"`
-}
-
-func (h *Handler) serveSitemap(w http.ResponseWriter, st *state) {
-	idx := sitemapIndex{
-		XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9",
-	}
-
-	for _, u := range st.sitemapURLs {
-		idx.Sitemaps = append(idx.Sitemaps, sitemapLoc{Loc: u})
-	}
-
-	w.Header().Set("Content-Type", "application/xml")
-	_, _ = fmt.Fprint(w, xml.Header)
-
-	enc := xml.NewEncoder(w)
-	enc.Indent("", "  ")
-	_ = enc.Encode(idx)
 }
 
 func (h *Handler) serveStatus(w http.ResponseWriter, st *state) {

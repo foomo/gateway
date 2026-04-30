@@ -85,13 +85,13 @@ outdated:
 	@echo "〉listing outdated dependencies"
 	@go list -u -m -json all | go-mod-outdated -update -direct
 
-### Sandbox
+### Example
 
-.PHONY: sandbox.run
-## Run the sandbox (no Docker required)
-sandbox.run:
-	@echo "〉running sandbox"
-	@go run ./examples/sandbox/main.go
+.PHONY: example.run
+## Run the example (no Docker required)
+example.run:
+	@echo "〉running example"
+	@cd example && go run main.go
 
 ### Documentation
 

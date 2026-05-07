@@ -18,9 +18,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 
@@ -29,55 +26,14 @@ import (
 	csclient "github.com/foomo/contentserver/client"
 	cscontent "github.com/foomo/contentserver/content"
 	csrequests "github.com/foomo/contentserver/requests"
+
+	"github.com/foomo/gateway/example/internal/contentserver"
+	"github.com/foomo/gateway/example/internal/errorfrontend"
+	"github.com/foomo/gateway/example/internal/newsfrontend"
+	"github.com/foomo/gateway/example/internal/pagefrontend"
 	"github.com/foomo/gateway/pkg/gateway"
 	"github.com/foomo/gateway/pkg/handler"
 )
-
-// contentTree defines the URIs the mock contentserver knows about.
-var contentTree = map[string]*cscontent.SiteContent{
-	"/": {
-		Status: cscontent.StatusOk,
-		URI:    "/",
-		Item:   &cscontent.Item{ID: "home", MimeType: "application/x-sandbox-page"},
-	},
-	"/about": {
-		Status: cscontent.StatusOk,
-		URI:    "/about",
-		Item:   &cscontent.Item{ID: "about", MimeType: "application/x-sandbox-page"},
-	},
-	"/news/article-1": {
-		Status: cscontent.StatusOk,
-		URI:    "/news/article-1",
-		Item:   &cscontent.Item{ID: "news-1", MimeType: "application/x-sandbox-news"},
-	},
-}
-
-// csResponse mirrors the envelope the contentserver HTTP client expects.
-type csResponse struct {
-	Reply *cscontent.SiteContent `json:"Reply"`
-}
-
-func mockContentserver() *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var req struct {
-			URI string `json:"URI"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		sc, ok := contentTree[req.URI]
-		if !ok {
-			sc = &cscontent.SiteContent{Status: cscontent.StatusNotFound}
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(csResponse{Reply: sc}); err != nil {
-			log.Printf("contentserver mock: encode error: %v", err)
-		}
-	}))
-}
 
 // csResolver wraps the contentserver client to implement handler.Resolver.
 type csResolver struct {
@@ -102,54 +58,11 @@ func svc(srv *httptest.Server) gateway.Service {
 	return gateway.Service(srv.URL)
 }
 
-func pageFrontend() *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contentID := r.Header.Get(handler.HeaderContentID)
-		mimeType := r.Header.Get(handler.HeaderMimeType)
-
-		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, "<html><body>\n")
-		fmt.Fprintf(w, "<h1>Page frontend</h1>\n")
-		fmt.Fprintf(w, "<p>URI: %s</p>\n", r.URL.Path)
-		fmt.Fprintf(w, "<p>Content-ID: %s</p>\n", contentID)
-		fmt.Fprintf(w, "<p>Mime-Type: %s</p>\n", mimeType)
-		fmt.Fprintf(w, "</body></html>\n")
-	}))
-}
-
-func newsFrontend() *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contentID := r.Header.Get(handler.HeaderContentID)
-		mimeType := r.Header.Get(handler.HeaderMimeType)
-
-		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, "<html><body>\n")
-		fmt.Fprintf(w, "<h1>News frontend</h1>\n")
-		fmt.Fprintf(w, "<p>URI: %s</p>\n", r.URL.Path)
-		fmt.Fprintf(w, "<p>Content-ID: %s</p>\n", contentID)
-		fmt.Fprintf(w, "<p>Mime-Type: %s</p>\n", mimeType)
-		fmt.Fprintf(w, "</body></html>\n")
-	}))
-}
-
-func errorFrontend() *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		code := r.Header.Get(handler.HeaderErrorCode)
-
-		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, "<html><body>\n")
-		fmt.Fprintf(w, "<h1>Error frontend</h1>\n")
-		fmt.Fprintf(w, "<p>Error code: %s</p>\n", code)
-		fmt.Fprintf(w, "<p>URI: %s</p>\n", r.URL.Path)
-		fmt.Fprintf(w, "</body></html>\n")
-	}))
-}
-
 func main() {
-	cs := mockContentserver()
-	page := pageFrontend()
-	news := newsFrontend()
-	errSvc := errorFrontend()
+	cs := httptest.NewServer(contentserver.Handler(nil))
+	page := httptest.NewServer(pagefrontend.Handler())
+	news := httptest.NewServer(newsfrontend.Handler())
+	errSvc := httptest.NewServer(errorfrontend.Handler())
 
 	defer cs.Close()
 	defer page.Close()
@@ -163,12 +76,12 @@ func main() {
 	l.Info("news frontend", zap.String("url", news.URL))
 	l.Info("error frontend", zap.String("url", errSvc.URL))
 
-	csClient, err := csclient.NewHTTPClient(cs.URL)
+	csCli, err := csclient.NewHTTPClient(cs.URL)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	h := handler.New(l, &csResolver{cs: csClient})
+	h := handler.New(l, &csResolver{cs: csCli})
 
 	h.Apply([]gateway.Spec{
 		{
@@ -200,5 +113,7 @@ func main() {
 	l.Info("try: curl -i http://localhost:8080/sitemap.xml")
 	l.Info("try: curl -i http://localhost:8080/gateway/status")
 
-	log.Fatal(http.ListenAndServe(":8080", h))
+	if err := http.ListenAndServe(":8080", h); err != nil {
+		panic(err)
+	}
 }

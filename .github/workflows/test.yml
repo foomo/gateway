@@ -47,3 +47,40 @@ jobs:
       - name: Run test
         run: make test
 
+  kind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: jdx/mise-action@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          check-latest: true
+          go-version-file: 'go.mod'
+
+      - name: Build example image
+        run: docker build -f example/Dockerfile -t foomo-gateway-example:test .
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: foomo-gateway
+          config: test/kind/kind-config.yaml
+
+      - name: Load image into kind
+        run: kind load docker-image foomo-gateway-example:test --name=foomo-gateway
+
+      - name: Apply CRD + manifests
+        run: |
+          kubectl apply -f config/crd/foomo.org_gateways.yaml
+          kubectl wait --for=condition=Established crd/gateways.foomo.org --timeout=30s
+          kubectl apply -f test/kind/manifests/
+          kubectl -n default wait --for=condition=Available --timeout=120s \
+            deployment/contentserver deployment/pagefrontend \
+            deployment/newsfrontend deployment/errorfrontend
+
+      - name: Run kind tests
+        env:
+          GO_TEST_TAGS: integration
+        run: go test -C test/kind -tags=safe -count=1 ./...

@@ -119,6 +119,8 @@ github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/foomo/contentserver v1.18.1 h1:hM2vBnvIJ+1WYMWHXlO/+dagrlJeqszvPKfulGDgTG8=
 github.com/foomo/contentserver v1.18.1/go.mod h1:ZQhItv/9cdJTf8ul0rKBAWI3KBnxXJgVHyMbBluBBdo=
+github.com/foomo/go v0.10.0 h1:9kyiXdtkhI1PXdUCQBNYCVYSK+uPhbe8nzzp5d+PYrQ=
+github.com/foomo/go v0.10.0/go.mod h1:jeSB/atkoqSoJ3+ak0+b/Xtj7IMyDj1odzJroudT7Dw=
 github.com/foomo/gostandards v0.2.0 h1:Ryd7TI9yV3Xk5B84DcUDB7KcL3LzQ8NS+TVOrFxTYfA=
 github.com/foomo/gostandards v0.2.0/go.mod h1:XQx7Ur6vyvxaIe2cQvAthuhPYDe+d2soibqVcXDXOh4=
 github.com/foomo/keel v0.22.0 h1:zNdf6rEDVsGKWJTO5M92fnraSLlNuD+r443Uhqvq92U=

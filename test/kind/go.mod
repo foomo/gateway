@@ -1,13 +1,17 @@
-module github.com/foomo/gateway/example
+module github.com/foomo/gateway/test/kind
 
 go 1.26.0
 
-replace github.com/foomo/gateway => ../
+replace github.com/foomo/gateway => ../..
 
 require (
 	github.com/foomo/contentserver v1.18.1
 	github.com/foomo/gateway v0.0.0
+	github.com/foomo/go v0.10.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.28.0
+	k8s.io/apimachinery v0.36.0
+	k8s.io/client-go v0.36.0
 )
 
 require (
@@ -95,6 +99,7 @@ require (
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/sony/gobreaker v1.0.0 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/tinylib/msgp v1.5.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
@@ -130,8 +135,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.36.0 // indirect
-	k8s.io/apimachinery v0.36.0 // indirect
-	k8s.io/client-go v0.36.0 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect

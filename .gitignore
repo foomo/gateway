@@ -24,6 +24,9 @@
 ## Lefthook
 !.lefthook.yaml
 
+## Docker
+!.dockerignore
+
 ## VSCode
 !.vscode/
 .vscode/*

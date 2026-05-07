@@ -1,0 +1,33 @@
+# NOTE: spec.service uses http://localhost:<nodePort> because the gateway under
+# test runs on the HOST (test process) in this kind setup, not inside the
+# cluster. In a real deployment this would be an in-cluster Service DNS like
+# http://pagefrontend.default.svc.cluster.local:8080. The test exercises the
+# library code paths regardless; only the URL form differs.
+---
+apiVersion: foomo.org/v1
+kind: Gateway
+metadata:
+  name: page
+spec:
+  service: "http://localhost:30002"
+  expose:
+    - cmsMimetypes:
+        - "application/x-sandbox-page"
+---
+apiVersion: foomo.org/v1
+kind: Gateway
+metadata:
+  name: news
+spec:
+  service: "http://localhost:30003"
+  expose:
+    - cmsMimetypes:
+        - "application/x-sandbox-news"
+---
+apiVersion: foomo.org/v1
+kind: Gateway
+metadata:
+  name: error-frontend
+spec:
+  service: "http://localhost:30004"
+  errorFrontend: true

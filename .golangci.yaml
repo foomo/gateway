@@ -10,7 +10,7 @@ linters:
   default: all
   disable:
     # Project specific linters
-    #- wsl_v5
+    - paralleltest
     # Discouraged linters
     - noinlineerr # Disallows inline error handling (`if err := ...; err != nil {`).
     - embeddedstructfieldcheck #  Embedded types should be at the top of the field list of a struct, and there must be an empty line separating embedded fields from regular fields. [fast]
@@ -54,6 +54,8 @@ linters:
 
   # https://golangci-lint.run/docs/linters/
   settings:
+    gomoddirectives:
+      replace-local: true
     goconst:
       ignore-tests: true
       min-occurrences: 5
@@ -74,6 +76,9 @@ linters:
       - legacy
       - std-error-handling
     rules:
+      - linters:
+          - gosec
+        path: example/
       - linters:
           - asasalint
         path: (.+)_test\.go

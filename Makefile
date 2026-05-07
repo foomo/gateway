@@ -15,11 +15,6 @@ endef
 %: .mise .lefthook
 	@:
 
-.PHONY: .lefthook
-# Configure git hooks for lefthook
-.lefthook:
-	@lefthook install --reset-hooks-path
-
 .PHONY: .mise
 # Install dependencies
 .mise:
@@ -27,69 +22,93 @@ ifeq (, $(shell command -v mise))
 	$(error $(br)$(br)Please ensure you have 'mise' installed and activated!$(br)$(br)  $$ brew update$(br)  $$ brew install mise$(br)$(br)See the documentation: https://mise.jdx.dev/getting-started.html)
 endif
 	@mise install
-.PHONY: doc
+
+.PHONY: .lefthook
+# Configure git hooks for lefthook
+.lefthook:
+	@lefthook install --reset-hooks-path
 
 ### Tasks
 
-.PHONY: tidy
-## Run go mod tidy
-tidy:
-	@echo "〉running go mod tidy"
-	@go mod tidy
-
-.PHONY: generate
-## Run go generate
-generate:
-	@echo "〉running go generate"
-	@mise exec -- go generate ./...
-
-.PHONY: test
-## Run tests
-test:
-	@echo "〉running tests"
-	@GO_TEST_TAGS=-skip go test -tags=safe -coverprofile=coverage.out ./...
-
-.PHONY: test.race
-## Run tests with `-race` flag
-test.race:
-	@echo "〉running tests with -race flag"
-	@GO_TEST_TAGS=-skip,race go test -tags=safe -coverprofile=coverage.out -update ./...
-
-.PHONY: test.update
-## Run tests with `-update` flag
-test.update:
-	@echo "〉running tests with -update flag"
-	@GO_TEST_TAGS=-skip go test -tags=safe -update -coverprofile=coverage.out -update ./...
-
-.PHONY: fmt
-## Run format
-fmt:
-	@echo "〉formatting files"
-	@golangci-lint fmt ./...
+.PHONY: check
+## Run lint & tests
+check: tidy generate lint test.race test.envtest audit
 
 .PHONY: lint
 ## Run linter
 lint:
-	@echo "〉linting files"
-	@golangci-lint run
+	@echo "〉golangci-lint run"
+	golangci-lint run --max-same-issues 0 --max-issues-per-linter 0
 
 .PHONY: lint.fix
 ## Fix lint violations
 lint.fix:
-	@echo "〉fixing lint errors"
-	@golangci-lint run --fix
+	@echo "〉golangci-lint run fix"
+	golangci-lint run --fix --max-same-issues 0 --max-issues-per-linter 0
+
+.PHONY: generate
+## Run go generate
+generate:
+	@echo "〉go generate"
+	@go generate ./...
+
+.PHONY: test
+## Run tests
+test:
+	@echo "〉go test"
+	@GO_TEST_TAGS=-skip go test -coverprofile=coverage.out -tags=safe ./...
+
+.PHONY: test.race
+## Run tests with -race
+test.race:
+	@echo "〉go test -race"
+	@GO_TEST_TAGS=-skip go test -coverprofile=coverage.out -tags=safe -race ./...
+
+.PHONY: test.update
+## Run tests with -update
+test.update:
+	@echo "〉go test -update"
+	@GO_TEST_TAGS=-skip go test -tags=safe -update -coverprofile=coverage.out -update ./...
+
+# Pin the kube-apiserver/etcd binaries that envtest boots. Keep aligned with the
+# controller-runtime release pinned in .mise.toml + test/envtest/go.mod.
+ENVTEST_K8S_VERSION ?= 1.36.x
+
+.PHONY: test.envtest
+## Run envtest integration tests (boots a local kube-apiserver; downloads binaries on first run)
+test.envtest:
+	@echo "〉go test (envtest)"
+	@KUBEBUILDER_ASSETS="$$(setup-envtest use -p path $(ENVTEST_K8S_VERSION))" \
+		go test -C test/envtest -tags=safe -count=1 ./...
+
+### Dependencies
+
+.PHONY: tidy
+## Run go mod tidy (root + submodules)
+tidy:
+	@echo "〉go mod tidy"
+	@go mod tidy
+	@cd example && go mod tidy
+	@cd test/envtest && go mod tidy
 
 .PHONY: outdated
 ## Show outdated direct dependencies
 outdated:
-	@echo "〉listing outdated dependencies"
+	@echo "〉go mod outdated"
 	@go list -u -m -json all | go-mod-outdated -update -direct
+
+.PHONY: upgrade
+## Show outdated direct dependencies
+upgrade:
+	@echo "〉go mod upgrade"
+	@go list -u -m -f '{{if and (not .Indirect) .Update}}{{.Path}}{{end}}' all | xargs -n1 -I{} go get {}@latest
+	@$(MAKE) tidy
 
 ### Example
 
-.PHONY: example.run
+.PHONY: example
 ## Run the example (no Docker required)
-example.run:
+example:
 	@echo "〉running example"
 	@cd example && go run main.go
 
@@ -116,21 +135,32 @@ godocs:
 ### Utils
 
 .PHONY: help
+# https://patorjk.com/software/taag/#p=display&f=Tmplr&t=gateway&x=none&v=4&h=4&w=80&we=false
 ## Show help text
+help: g=\033[0;32m
+help: b=\033[0;34m
+help: w=\033[0;90m
+help: e=\033[0m
 help:
-	@echo ""
-	@echo "Welcome to the gateway!"
-	@echo "\nUsage:\n  make [task]"
+	@echo "$(g)"
+	@echo "┏┓┏┓╋┏┓┓┏┏┏┓┓┏"
+	@echo "┗┫┗┻┗┗ ┗┻┛┗┻┗┫"
+	@echo " ┛           ┛"
+	@echo "with ❤ foomo by bestbytes"
+	@echo "$(e)"
+	@echo "$(b)Usage:$(e)\n  make [task]"
 	@awk '{ \
 		if($$0 ~ /^### /){ \
-			if(help) printf "%-23s %s\n\n", cmd, help; help=""; \
-			printf "\n%s:\n", substr($$0,5); \
+			if(help) printf "  %-21s $(w)%s$(e)\n\n", cmd, help; help=""; \
+			printf "$(b)\n%s:$(e)\n", substr($$0,5); \
 		} else if($$0 ~ /^[a-zA-Z0-9._-]+:/){ \
 			cmd = substr($$0, 1, index($$0, ":")-1); \
-			if(help) printf "  %-23s %s\n", cmd, help; help=""; \
+			if(help) printf "  %-21s $(w)%s$(e)\n", cmd, help; help=""; \
 		} else if($$0 ~ /^##/){ \
-			help = help ? help "\n                          " substr($$0,3) : substr($$0,3); \
+			help = help ? help "\n                        " substr($$0,3) : substr($$0,3); \
 		} else if(help){ \
-			print "\n                        " help "\n"; help=""; \
+			print "\n                        $(w)" help "$(e)\n"; help=""; \
 		} \
 	}' $(MAKEFILE_LIST)
+	@echo ""
+

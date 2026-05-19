@@ -1,0 +1,22 @@
+# Build context for example/Dockerfile is the repo root. Keep it lean.
+.git
+.github
+.idea
+.vscode
+.claude
+.claude-global
+docs
+test
+tmp
+coverage.out
+*.md
+.golangci.yaml
+.goreleaser.yaml
+.lefthook.yaml
+.mise.toml
+.mise.local.toml
+.editorconfig
+Makefile
+example/Dockerfile
+example/.dockerignore
+example/README.md

@@ -26,7 +26,7 @@ type Event struct {
 	Gateway Gateway
 }
 
-// GVR returns the GroupVersionResource for Gateway CRDs.
+// GVR returns the GroupVersionResource for the default foomo.org Gateway CRD.
 func GVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
 		Group:    Group,
@@ -36,8 +36,9 @@ func GVR() schema.GroupVersionResource {
 }
 
 // Listen watches for Gateway CRD changes and sends events to the returned channel.
+// Pass gvr to target a specific CRD — use GVR() for the default foomo.org one.
 // The channel is closed when the context is canceled.
-func Listen(ctx context.Context, client dynamic.Interface, namespace string) (<-chan Event, error) {
+func Listen(ctx context.Context, client dynamic.Interface, namespace string, gvr schema.GroupVersionResource) (<-chan Event, error) {
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(
 		client,
 		30*time.Second,
@@ -45,7 +46,7 @@ func Listen(ctx context.Context, client dynamic.Interface, namespace string) (<-
 		nil,
 	)
 
-	informer := factory.ForResource(GVR()).Informer()
+	informer := factory.ForResource(gvr).Informer()
 
 	ch := make(chan Event, 64)
 

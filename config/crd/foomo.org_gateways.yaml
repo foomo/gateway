@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: gateways.foomo.org
 spec:
   group: foomo.org
@@ -43,13 +43,12 @@ spec:
             properties:
               addToRobots:
                 type: string
+              errorFrontend:
+                type: boolean
               expose:
                 items:
                   description: Expose defines an exposed path configuration.
                   properties:
-                    cmsApp:
-                      description: Named application in cms
-                      type: string
                     cmsMimetypes:
                       description: Contentserver mimetypes
                       items:
@@ -61,24 +60,13 @@ spec:
                         gateway api
                       type: string
                     internalAccessGroups:
-                      description: Access is only granted to these internal groups
+                      description: InternalAccessGroups restricts access to the listed
+                        internal groups.
                       items:
                         description: InternalAccessGroup represents an internal access
                           group identifier.
                         type: string
                       type: array
-                    paths:
-                      description: paths in urls to register for, lookup is automatically
-                        long to short
-                      items:
-                        description: Path represents a URI path.
-                        type: string
-                      type: array
-                    stripBasePath:
-                      description: Service is exposed at /foo request is /foo/bar,
-                        stripBasePath == true => requests will go to /bar and /foo
-                        will be set as x-base-path header
-                      type: boolean
                   type: object
                 type: array
               service:

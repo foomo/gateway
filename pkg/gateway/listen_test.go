@@ -28,10 +28,10 @@ func newFakeClient(objects ...runtime.Object) *dynamicfake.FakeDynamicClient {
 	)
 }
 
-func newUnstructuredGateway(name, namespace, service string, paths []string) *unstructured.Unstructured {
-	pathsIface := make([]any, len(paths))
-	for i, p := range paths {
-		pathsIface[i] = p
+func newUnstructuredGateway(name, namespace, service string, mimeTypes []string) *unstructured.Unstructured {
+	mimeTypesIface := make([]any, len(mimeTypes))
+	for i, mt := range mimeTypes {
+		mimeTypesIface[i] = mt
 	}
 
 	return &unstructured.Unstructured{
@@ -44,10 +44,9 @@ func newUnstructuredGateway(name, namespace, service string, paths []string) *un
 			},
 			"spec": map[string]any{
 				"service": service,
-				"sitemap": "",
 				"expose": []any{
 					map[string]any{
-						"paths": pathsIface,
+						"cmsMimetypes": mimeTypesIface,
 					},
 				},
 			},
@@ -76,10 +75,10 @@ func TestListenAdd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	ch, err := gateway.Listen(ctx, client, "default")
+	ch, err := gateway.Listen(ctx, client, "default", gateway.GVR())
 	require.NoError(t, err)
 
-	obj := newUnstructuredGateway("test-svc", "default", "http://test-svc.default.svc.cluster.local", []string{"/api"})
+	obj := newUnstructuredGateway("test-svc", "default", "http://test-svc.default.svc.cluster.local", []string{"text/html"})
 	_, err = client.Resource(gateway.GVR()).Namespace("default").Create(ctx, obj, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -87,7 +86,7 @@ func TestListenAdd(t *testing.T) {
 	assert.Equal(t, gateway.EventAdd, event.Type)
 	assert.Equal(t, "test-svc", event.Gateway.Name)
 	assert.Equal(t, gateway.Service("http://test-svc.default.svc.cluster.local"), event.Gateway.Spec.Service)
-	assert.Equal(t, []gateway.Path{"/api"}, event.Gateway.Spec.Expose[0].Paths)
+	assert.Equal(t, []gateway.MimeType{"text/html"}, event.Gateway.Spec.Expose[0].CmsMimetypes)
 }
 
 func TestListenUpdate(t *testing.T) {
@@ -98,7 +97,7 @@ func TestListenUpdate(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	ch, err := gateway.Listen(ctx, client, "default")
+	ch, err := gateway.Listen(ctx, client, "default", gateway.GVR())
 	require.NoError(t, err)
 
 	// Create the object first.
@@ -110,13 +109,13 @@ func TestListenUpdate(t *testing.T) {
 	receiveEvent(t, ch, 5*time.Second)
 
 	// Update the object.
-	updated := newUnstructuredGateway("test-svc", "default", "http://test-svc.default.svc.cluster.local", []string{"/api", "/health"})
+	updated := newUnstructuredGateway("test-svc", "default", "http://test-svc.default.svc.cluster.local", []string{"text/html", "application/json"})
 	_, err = client.Resource(gateway.GVR()).Namespace("default").Update(ctx, updated, metav1.UpdateOptions{})
 	require.NoError(t, err)
 
 	event := receiveEvent(t, ch, 5*time.Second)
 	assert.Equal(t, gateway.EventUpdate, event.Type)
-	assert.Equal(t, []gateway.Path{"/api", "/health"}, event.Gateway.Spec.Expose[0].Paths)
+	assert.Equal(t, []gateway.MimeType{"text/html", "application/json"}, event.Gateway.Spec.Expose[0].CmsMimetypes)
 }
 
 func TestListenDelete(t *testing.T) {
@@ -127,7 +126,7 @@ func TestListenDelete(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	ch, err := gateway.Listen(ctx, client, "default")
+	ch, err := gateway.Listen(ctx, client, "default", gateway.GVR())
 	require.NoError(t, err)
 
 	// Create the object first.
@@ -154,7 +153,7 @@ func TestListenContextCancel(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	ch, err := gateway.Listen(ctx, client, "default")
+	ch, err := gateway.Listen(ctx, client, "default", gateway.GVR())
 	require.NoError(t, err)
 
 	cancel()

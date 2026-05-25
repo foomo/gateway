@@ -170,6 +170,37 @@ func TestServeHTTP_Sitemap(t *testing.T) {
 	assert.Contains(t, rec.Body.String(), "https://example.com/sitemap.xml")
 }
 
+func TestServeHTTP_DualRole_ErrorAndMimeTypeRouting(t *testing.T) {
+	t.Parallel()
+
+	resolver := routeResolver(map[string][2]string{
+		"/page": {"text/page", "item-1"},
+	})
+
+	dual, headers := newMockFrontend()
+	defer dual.Close()
+
+	h := newHandler(t, resolver)
+	h.Apply([]gateway.Spec{
+		{
+			Service:       svc(dual),
+			ErrorFrontend: true,
+			Expose:        []gateway.Expose{{CmsMimetypes: []gateway.MimeType{"text/page"}}},
+		},
+	})
+
+	// regular route is served
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, newRequest(http.MethodGet, "/page"))
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "item-1", headers.Get(handler.HeaderContentID))
+
+	// error path also routes to the same service
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, newRequest(http.MethodGet, "/missing"))
+	assert.Equal(t, "404", headers.Get(handler.HeaderErrorCode))
+}
+
 func TestWatch(t *testing.T) {
 	t.Parallel()
 

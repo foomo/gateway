@@ -81,8 +81,6 @@ func (h *Handler) Apply(specs []gateway.Spec) {
 
 		if spec.ErrorFrontend {
 			st.errorProxy = sp
-
-			continue
 		}
 
 		for _, expose := range spec.Expose {

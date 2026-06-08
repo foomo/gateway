@@ -1,19 +1,18 @@
 .*
-*.zip
-*.tar
-*.out
 *.log
-/bin/
-/tmp/
+*.pid
+*.retry
+*.out
+*.tgz
+*.zip
+*.pem
+bin/
+tmp/
 
 ## Git
 !.gitkeep
 !.gitignore
-
-## Claude
-!.claude/
-.claude/*
-!.claude/settings.json
+!.gitattributes
 
 ## GitHub
 !.github/

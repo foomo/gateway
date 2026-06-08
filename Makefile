@@ -42,7 +42,7 @@ go.work:
 
 .PHONY: check
 ## Run lint & tests
-check: tidy generate lint test.race audit
+check: tidy generate lint.fix test.race audit
 
 .PHONY: lint
 ## Run linter

@@ -4,7 +4,7 @@
 # IMPORTANT: build context is the repo ROOT, not example/, because example/go.mod
 # uses `replace github.com/foomo/gateway => ../` to consume the in-tree library.
 #   docker build -f example/Dockerfile -t foomo-gateway-example:test .
-FROM golang:1.26.4-alpine AS build
+FROM golang:1.27rc2-alpine AS build
 WORKDIR /src
 
 # Module manifests first for better layer caching.

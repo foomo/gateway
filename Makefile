@@ -86,20 +86,20 @@ test.update:
 ## Run go mod tidy (root + submodules)
 tidy:
 	@echo "〉go mod tidy"
-	@$(foreach mod,$(GOMODS), (cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && go mod tidy) &&) true
+	@$(foreach mod,$(GOMODS), (cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && GOWORK=off go mod tidy) &&) true
 	@go work sync
 
 .PHONY: outdated
 ## Show outdated direct dependencies
 outdated:
 	@echo "〉go mod outdated"
-	@go list -u -m -json all | go-mod-outdated -update -direct
+	@$(foreach mod,$(GOMODS), (cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && GOWORK=off go list -u -m -json all | go-mod-outdated -update -direct) &&) true
 
 .PHONY: upgrade
 ## Show outdated direct dependencies
 upgrade:
 	@echo "〉go mod upgrade"
-	@go list -u -m -f '{{if and (not .Indirect) .Update}}{{.Path}}{{end}}' all | xargs -n1 -I{} go get {}@latest
+	@$(foreach mod,$(GOMODS), (cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && GOWORK=off go list -u -m -f '{{if and (not .Indirect) .Update}}{{.Path}}{{end}}' all | xargs -n1 -I{} go get {}@latest) &&) true
 	@$(MAKE) tidy
 
 ### Example

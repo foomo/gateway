@@ -9,11 +9,14 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"go.uber.org/zap"
-
 	"github.com/foomo/gateway/pkg/gateway"
 	"github.com/foomo/gateway/pkg/robots"
 	"github.com/foomo/gateway/pkg/sitemap"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 const (
@@ -70,6 +73,7 @@ func (h *Handler) Apply(specs []gateway.Spec) {
 		}
 
 		sp := httputil.NewSingleHostReverseProxy(proxyURL)
+		sp.Transport = otelhttp.NewTransport(sp.Transport)
 
 		if spec.Sitemap != "" {
 			st.sitemapURLs = append(st.sitemapURLs, spec.Sitemap)
@@ -95,17 +99,21 @@ func (h *Handler) Apply(specs []gateway.Spec) {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	st := h.state.Load()
+	span := trace.SpanFromContext(r.Context())
 
 	switch r.URL.Path {
 	case "/robots.txt":
+		span.SetStatus(codes.Ok, "robots")
 		robots.Serve(w, st.robotsTXT)
 
 		return
 	case "/sitemap.xml":
+		span.SetStatus(codes.Ok, "sitemap")
 		sitemap.Serve(w, st.sitemapURLs)
 
 		return
 	case "/gateway/status":
+		span.SetStatus(codes.Ok, "status")
 		h.serveStatus(w, st)
 
 		return
@@ -113,36 +121,32 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	mimeType, contentID, err := h.resolver.Resolve(r)
 	if err != nil {
-		h.l.Error("resolver error",
-			zap.String("uri", r.URL.Path),
-			zap.Error(err),
-		)
+		span.SetStatus(codes.Error, err.Error())
 		h.serveError(w, r, st, http.StatusInternalServerError)
 
 		return
-	}
-
-	if mimeType == "" {
+	} else if mimeType == "" {
+		span.SetStatus(codes.Error, "empty mime type")
 		h.serveError(w, r, st, http.StatusNotFound)
 
 		return
 	}
 
-	mt := gateway.MimeType(mimeType)
+	span.SetAttributes(
+		attribute.String("mimeType", mimeType),
+		attribute.String("contentId", contentID),
+	)
 
-	sp, ok := st.mimeProxies[mt]
+	sp, ok := st.mimeProxies[gateway.MimeType(mimeType)]
 	if !ok {
-		h.l.Warn("no proxy registered for mime type",
-			zap.String("mimeType", string(mt)),
-			zap.String("uri", r.URL.Path),
-		)
+		span.SetStatus(codes.Error, "missing mime type proxy")
 		h.serveError(w, r, st, http.StatusNotFound)
 
 		return
 	}
 
 	r.Header.Set(HeaderContentID, contentID)
-	r.Header.Set(HeaderMimeType, string(mt))
+	r.Header.Set(HeaderMimeType, mimeType)
 	sp.ServeHTTP(w, r)
 }
 
